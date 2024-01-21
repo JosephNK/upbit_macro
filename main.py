@@ -129,7 +129,7 @@ class MyCoinAccount:
         return asyncio.run(self.custom_coroutine(all_market_items=all_market_items, my_account_items=my_account_items))
 
     async def custom_coroutine(self, all_market_items: list, my_account_items: list):
-        allow_my_market_items = list(filter(lambda x: x['market'] != 'KRW-KRW' and x['market'] != 'KRW-XCORE', my_account_items))
+        allow_my_market_items = list(filter(lambda x: x['market'] != 'KRW-KRW' and x['market'] != 'KRW-XCORE' and x['market'] != 'KRW-ETHW' and x['market'] != 'KRW-ETHF', my_account_items))
 
         if self.is_have_market == True:
             market_items = allow_my_market_items
