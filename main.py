@@ -196,9 +196,13 @@ class ExcelTable:
 
             f_avg_buy_price = float(avg_buy_price)
             f_trade_price = float(trade_price)
+            f_high_price = float(high_price)
+            f_low_price = float(low_price)
 
             avg_buy_price = '{0:,}'.format(f_avg_buy_price)
             trade_price = '{0:,}'.format(float(f_trade_price))
+            high_price = '{0:,}'.format(float(f_high_price))
+            low_price = '{0:,}'.format(float(f_low_price))
             highest_52_week_price = '{0:,}'.format(float(highest_52_week_price))
 
             # 수익률
