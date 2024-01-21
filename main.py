@@ -6,6 +6,7 @@ from prettytable import PrettyTable
 from urllib.parse import urlencode, unquote
 from pprint import pprint
 from datetime import datetime
+from enum import Enum
 import inquirer
 import jwt 
 import uuid
@@ -16,6 +17,10 @@ import requests
 import asyncio
 import emoji
 import click
+
+class DataSort(Enum):
+    NAME = 1
+    RATE = 2
 
 # MarketDataHelper
 
@@ -121,7 +126,7 @@ class MyCoinAccount:
         self.is_have_market = is_have_market
 
     def run(self, all_market_items: list, my_account_items: list):
-        asyncio.run(self.custom_coroutine(all_market_items=all_market_items, my_account_items=my_account_items))
+        return asyncio.run(self.custom_coroutine(all_market_items=all_market_items, my_account_items=my_account_items))
 
     async def custom_coroutine(self, all_market_items: list, my_account_items: list):
         allow_my_market_items = list(filter(lambda x: x['market'] != 'KRW-KRW' and x['market'] != 'KRW-XCORE', my_account_items))
@@ -164,15 +169,15 @@ class MyCoinAccount:
         
         new_ticker_items = ticker_items_rebuild()
 
-        execel_table = ExcelTable()
-        execel_table.print(all_market_items=all_market_items, ticker_items=new_ticker_items)
-        execel_table.save_excel()
-
+        return new_ticker_items
 
 # ExcelTable            
 
 class ExcelTable:
     table: PrettyTable
+
+    def __init__(self, sort: DataSort):
+        self.sort = sort
     
     def print(self, all_market_items: list, ticker_items: list):
         x = PrettyTable()
@@ -180,6 +185,7 @@ class ExcelTable:
 
         for ticker_item in ticker_items:
             market = ticker_item.get('market')
+            # english_name = ticker_item.get('english_name')
             korean_name = ticker_item.get('korean_name')
             avg_buy_price = ticker_item.get('avg_buy_price', '0') # 평균 매수가
             # unit_currency = ticker_item.get('unit_currency')
@@ -211,8 +217,12 @@ class ExcelTable:
                     highest_52_week_price]
             x.add_row(item)
 
-        x.sortby = "수익률(%)"
-        x.reversesort = True
+        if self.sort == DataSort.NAME:
+            x.sortby = "이름"
+        elif self.sort == DataSort.RATE:
+            x.sortby = "수익률(%)"
+            x.reversesort = True
+
         self.table = x
         print(x)
 
@@ -264,18 +274,39 @@ if __name__ == '__main__':
     my_account_items = api.requestMyAccountList()
 
     # Select 
-    questions = [
-    inquirer.List('method',
-                    message="다음 중 원하는 기능을 선택하세요?",
-                    choices=['(A) 현재 자산의 리스트를 보시겠습니까?', 
-                             '(B) 가지고 있는 않은 코인의 리스트를 보시겠습니까?'],
+    questions_func = [
+        inquirer.List('func',
+                        message="다음 중 원하는 기능을 선택하세요.",
+                        choices=['(A) 현재 자산의 리스트를 보시겠습니까?', 
+                                '(B) 가지고 있는 않은 코인의 리스트를 보시겠습니까?'],
+                    ),
+    ]
+    answers_func = inquirer.prompt(questions_func)
+    func_value = answers_func['func']
+
+    # Select 
+    questions_sort = [
+        inquirer.List('sort',
+                    message="데이타 정렬을 선택하세요.",
+                    choices=['(A) 이름순', '(B) 수익율순'],
                 ),
     ]
-    answers = inquirer.prompt(questions)
-    method_value = answers['method']
-    if "(A)" in method_value:
-        my_account = MyCoinAccount(api=api, is_have_market=True)
-        my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
-    elif "(B)" in method_value:
-        my_account = MyCoinAccount(api=api, is_have_market=False)
-        my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
+    answers_sort = inquirer.prompt(questions_sort)
+    sort_value = answers_sort['sort']
+
+    if "(A)" in func_value:
+        is_have_market = True
+    elif "(B)" in func_value:
+        is_have_market = False
+
+    if "(A)" in sort_value:
+        data_sort = DataSort.NAME
+    elif "(B)" in sort_value:
+        data_sort = DataSort.RATE
+    
+    my_account = MyCoinAccount(api=api, is_have_market=is_have_market)
+    ticker_items = my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
+
+    execel_table = ExcelTable(sort=data_sort)
+    execel_table.print(all_market_items=all_market_items, ticker_items=ticker_items)
+    execel_table.save_excel()
