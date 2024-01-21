@@ -17,7 +17,9 @@ import asyncio
 import emoji
 import click
 
-class DataHelper:
+# MarketDataHelper
+
+class MarketDataHelper:
     def getMyAccountMarketList(self, items):
         def innerMap(obj):
             currency = obj['currency']
@@ -75,7 +77,7 @@ class API:
         json_object = res.json()
         # json_formatted_str = json.dumps(json_object, indent=2)
         # print(json_formatted_str)
-        return DataHelper().getMyAccountMarketList(json_object)
+        return MarketDataHelper().getMyAccountMarketList(json_object)
 
     def requestAllMarketList(self):
         res = requests.get(self.server_url + '/v1/market/all?isDetails=false', headers=self.default_json_headers)
@@ -111,8 +113,9 @@ class KeyFile:
             json.dump(json_data, f)
         return True
     
+# ResultMyAccount
 
-class ResultMyAccount:
+class MyCoinAccount:
     def __init__(self, api: API, is_have_market: bool):
         self.api = api
         self.is_have_market = is_have_market
@@ -161,10 +164,21 @@ class ResultMyAccount:
         
         new_ticker_items = ticker_items_rebuild()
 
-        x = PrettyTable()
-        x.field_names = ["Market", "이름", "현재가", "평균 매수가", "수익률", "고가", "저가", "52주 신고가"]
+        execel_table = ExcelTable()
+        execel_table.print(all_market_items=all_market_items, ticker_items=new_ticker_items)
+        execel_table.save_excel()
 
-        for ticker_item in new_ticker_items:
+
+# ExcelTable            
+
+class ExcelTable:
+    table: PrettyTable
+    
+    def print(self, all_market_items: list, ticker_items: list):
+        x = PrettyTable()
+        x.field_names = ["Market", "이름", "현재가", "평균 매수가", "수익률(%)", "고가", "저가", "52주 신고가"]
+
+        for ticker_item in ticker_items:
             market = ticker_item.get('market')
             korean_name = ticker_item.get('korean_name')
             avg_buy_price = ticker_item.get('avg_buy_price', '0') # 평균 매수가
@@ -191,21 +205,26 @@ class ResultMyAccount:
                     korean_name, 
                     trade_price, 
                     avg_buy_price, 
-                    f'{rate_of_return}%', 
+                    rate_of_return, 
                     high_price,
                     low_price,
                     highest_52_week_price]
             x.add_row(item)
 
+        x.sortby = "수익률(%)"
+        x.reversesort = True
+        self.table = x
         print(x)
-        print(f'Total: {len(new_ticker_items)}')
 
+        all_krw_market_items = list(filter(lambda x: 'KRW' in x['market'], all_market_items))
+
+        print(f'Total: {len(ticker_items)} / {len(all_krw_market_items)}')
+
+    def save_excel(self):
         csv_file_name = str(datetime.now())
         with open(f'{csv_file_name}.csv', 'w', newline='') as f_output:
-            f_output.write(x.get_csv_string())
-            print('\n')
+            f_output.write(self.table.get_csv_string())
             pprint(emoji.emojize(f':beer_mug: {csv_file_name}.csv 파일이 생성 되었습니다.'))
-            
 
 # Main
 
@@ -219,6 +238,7 @@ if __name__ == '__main__':
     file_name = 'data.json'
 
     if os.path.isfile(file_name):
+        # Select 
         questions = [
             inquirer.List('key',
                             message="기존 키를 사용하시겠습니까?",
@@ -238,6 +258,7 @@ if __name__ == '__main__':
     access_key_data = json_data['AccessKey']
     secret_key_data = json_data['SecretKey']
 
+    # API
     api = API(access_key=access_key_data, secret_key=secret_key_data)
     all_market_items = api.requestAllMarketList()
     my_account_items = api.requestMyAccountList()
@@ -253,24 +274,8 @@ if __name__ == '__main__':
     answers = inquirer.prompt(questions)
     method_value = answers['method']
     if "(A)" in method_value:
-        my_account = ResultMyAccount(api=api, is_have_market=True)
+        my_account = MyCoinAccount(api=api, is_have_market=True)
         my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
     elif "(B)" in method_value:
-        my_account = ResultMyAccount(api=api, is_have_market=False)
+        my_account = MyCoinAccount(api=api, is_have_market=False)
         my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
-
-
-    # async def async_generator(my_account_items):
-    #     for my_account_item in my_account_items:
-    #         await asyncio.sleep(2)
-    #         market = my_account_item['market']
-    #         print(market)
-    #         yield await requestMarketTickerList([market])
-
-    # async def custom_coroutine():
-    #     # asynchronous for loop
-    #     async for item in async_generator(my_account_items):
-    #         # report the result
-    #         print(item)
-
-# # no_have_items = getNoHaveListFromCompare()
