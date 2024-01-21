@@ -1,10 +1,11 @@
-# pip3 install PyJWT, requests, pyfiglet, inquirer, prompt_toolkit, click, PrettyTable
+# pip3 install PyJWT requests pyfiglet inquirer prompt_toolkit click PrettyTable emoji
 
 from pyfiglet import Figlet
 from prompt_toolkit import prompt
 from prettytable import PrettyTable
 from urllib.parse import urlencode, unquote
 from pprint import pprint
+from datetime import datetime
 import inquirer
 import jwt 
 import uuid
@@ -112,13 +113,32 @@ class KeyFile:
     
 
 class ResultMyAccount:
-    def run(self, api: API, all_market_items: list, my_account_items: list):
-        asyncio.run(custom_coroutine(api=api, my_account_items=my_account_items))
+    def __init__(self, api: API, is_have_market: bool):
+        self.api = api
+        self.is_have_market = is_have_market
 
-    async def custom_coroutine(self, api: API, all_market_items: list, my_account_items: list):
-        have_my_market_items = list(filter(lambda x: x['market'] != 'KRW-KRW' and x['market'] != 'KRW-XCORE', my_account_items))
-        have_my_market_symbol_items = list(map(lambda x: x['market'], have_my_market_items))
-        ticker_items = await api.requestMarketTickerList(markets=have_my_market_symbol_items)
+    def run(self, all_market_items: list, my_account_items: list):
+        asyncio.run(self.custom_coroutine(all_market_items=all_market_items, my_account_items=my_account_items))
+
+    async def custom_coroutine(self, all_market_items: list, my_account_items: list):
+        allow_my_market_items = list(filter(lambda x: x['market'] != 'KRW-KRW' and x['market'] != 'KRW-XCORE', my_account_items))
+
+        if self.is_have_market == True:
+            market_items = allow_my_market_items
+            market_symbol_items = list(map(lambda x: x['market'], market_items))
+        else:
+            def no_have_filter(all_market_item):
+                market = all_market_item['market']
+                for my_account_item in allow_my_market_items:
+                    my_market = my_account_item['market']
+                    if market == my_market:
+                        return False
+                return True
+            market_items = list(filter(no_have_filter, all_market_items))
+            market_items = list(filter(lambda x: 'KRW' in x['market'], market_items))
+            market_symbol_items = list(map(lambda x: x['market'], market_items))
+
+        ticker_items = await self.api.requestMarketTickerList(markets=market_symbol_items)
 
         def ticker_items_rebuild():
             new_ticker_items = []
@@ -131,7 +151,7 @@ class ResultMyAccount:
                     if market_symbol == ticker_symbol:
                         ticker_item['korean_name'] = market_korean_name
                         ticker_item['english_name'] = market_english_name
-                        for have_my_market_item in have_my_market_items:
+                        for have_my_market_item in market_items:
                             have_my_market_symbol = have_my_market_item['market']
                             if ticker_symbol == have_my_market_symbol:
                                 new_ticker_item = ticker_item | have_my_market_item
@@ -142,17 +162,50 @@ class ResultMyAccount:
         new_ticker_items = ticker_items_rebuild()
 
         x = PrettyTable()
-        x.field_names = ["Market", "이름", "평균 매수가"]
+        x.field_names = ["Market", "이름", "현재가", "평균 매수가", "수익률", "고가", "저가", "52주 신고가"]
 
         for ticker_item in new_ticker_items:
-            market = ticker_item['market']
-            korean_name = ticker_item['korean_name']
-            avg_buy_price = ticker_item['avg_buy_price']
-            unit_currency = ticker_item['unit_currency']
-            item = [market, korean_name, f'{avg_buy_price} {unit_currency}']
+            market = ticker_item.get('market')
+            korean_name = ticker_item.get('korean_name')
+            avg_buy_price = ticker_item.get('avg_buy_price', '0') # 평균 매수가
+            # unit_currency = ticker_item.get('unit_currency')
+            trade_price = ticker_item.get('trade_price', '0') # 현재가
+            high_price = ticker_item.get('high_price', '0') # 고가
+            low_price = ticker_item.get('low_price', '0') # 저가
+            highest_52_week_price = ticker_item.get('highest_52_week_price', '0') # 52주 신고가
+
+            f_avg_buy_price = float(avg_buy_price)
+            f_trade_price = float(trade_price)
+
+            avg_buy_price = '{0:,}'.format(f_avg_buy_price)
+            trade_price = '{0:,}'.format(float(f_trade_price))
+            highest_52_week_price = '{0:,}'.format(float(highest_52_week_price))
+
+            # 수익률
+            try:
+                rate_of_return = round(((f_trade_price - f_avg_buy_price) / f_avg_buy_price) * 100, 2)
+            except:
+                rate_of_return = 0
+                
+            item = [market, 
+                    korean_name, 
+                    trade_price, 
+                    avg_buy_price, 
+                    f'{rate_of_return}%', 
+                    high_price,
+                    low_price,
+                    highest_52_week_price]
             x.add_row(item)
-        
+
         print(x)
+        print(f'Total: {len(new_ticker_items)}')
+
+        csv_file_name = str(datetime.now())
+        with open(f'{csv_file_name}.csv', 'w', newline='') as f_output:
+            f_output.write(x.get_csv_string())
+            print('\n')
+            pprint(emoji.emojize(f':beer_mug: {csv_file_name}.csv 파일이 생성 되었습니다.'))
+            
 
 # Main
 
@@ -200,48 +253,12 @@ if __name__ == '__main__':
     answers = inquirer.prompt(questions)
     method_value = answers['method']
     if "(A)" in method_value:
-        print()
+        my_account = ResultMyAccount(api=api, is_have_market=True)
+        my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
     elif "(B)" in method_value:
-        print()
+        my_account = ResultMyAccount(api=api, is_have_market=False)
+        my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
 
-    async def custom_coroutine():
-        have_my_market_items = list(filter(lambda x: x['market'] != 'KRW-KRW' and x['market'] != 'KRW-XCORE', my_account_items))
-        have_my_market_symbol_items = list(map(lambda x: x['market'], have_my_market_items))
-        ticker_items = await api.requestMarketTickerList(markets=have_my_market_symbol_items)
-
-        def ticker_items_rebuild():
-            new_ticker_items = []
-            for all_market_item in all_market_items:
-                market_symbol = all_market_item['market']
-                market_korean_name = all_market_item['korean_name']
-                market_english_name = all_market_item['english_name']
-                for ticker_item in ticker_items:
-                    ticker_symbol = ticker_item['market']
-                    if market_symbol == ticker_symbol:
-                        ticker_item['korean_name'] = market_korean_name
-                        ticker_item['english_name'] = market_english_name
-                        for have_my_market_item in have_my_market_items:
-                            have_my_market_symbol = have_my_market_item['market']
-                            if ticker_symbol == have_my_market_symbol:
-                                new_ticker_item = ticker_item | have_my_market_item
-                                new_ticker_items.append(new_ticker_item)
-                                continue
-            return new_ticker_items
-        
-        new_ticker_items = ticker_items_rebuild()
-
-        x = PrettyTable()
-        x.field_names = ["Market", "이름", "평균 매수가"]
-
-        for ticker_item in new_ticker_items:
-            market = ticker_item['market']
-            korean_name = ticker_item['korean_name']
-            avg_buy_price = ticker_item['avg_buy_price']
-            unit_currency = ticker_item['unit_currency']
-            item = [market, korean_name, f'{avg_buy_price} {unit_currency}']
-            x.add_row(item)
-        
-        print(x)
 
     # async def async_generator(my_account_items):
     #     for my_account_item in my_account_items:
@@ -255,8 +272,5 @@ if __name__ == '__main__':
     #     async for item in async_generator(my_account_items):
     #         # report the result
     #         print(item)
-
-    asyncio.run(custom_coroutine())
-
 
 # # no_have_items = getNoHaveListFromCompare()
