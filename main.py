@@ -276,7 +276,7 @@ if __name__ == '__main__':
     # Select 
     questions_func = [
         inquirer.List('func',
-                        message="다음 중 원하는 기능을 선택하세요.",
+                        message="다음 중 원하는 기능을 선택하세요",
                         choices=['(A) 현재 자산의 리스트를 보시겠습니까?', 
                                 '(B) 가지고 있는 않은 코인의 리스트를 보시겠습니까?'],
                     ),
@@ -287,7 +287,7 @@ if __name__ == '__main__':
     # Select 
     questions_sort = [
         inquirer.List('sort',
-                    message="데이타 정렬을 선택하세요.",
+                    message="데이타 정렬을 선택하세요",
                     choices=['(A) 이름순', '(B) 수익율순'],
                 ),
     ]
