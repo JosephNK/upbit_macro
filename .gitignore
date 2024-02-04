@@ -1,4 +1,7 @@
+__pycache__/
+
 config/
 excel/
+
 data.json
 *.csv
