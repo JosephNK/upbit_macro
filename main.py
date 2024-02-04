@@ -2,27 +2,29 @@
 
 from pyfiglet import Figlet
 from pprint import pprint
-from src.types import DataSort
+from src.data_types import DataSort
 from src.my_coin_account import MyCoinAccount
 from src.order import UpbitOrder
-from src.market_data_helper import MarketDataHelper
 from src.key_file import KeyFile
+from src.updater import Updater
 from src.api import API, APIError
 from src.excel_table import ExcelTable
 import inquirer
-import os
 import sys
 import emoji
-
-file_name = 'data.json'
 
 if __name__ == '__main__':
     # Welcome Message
     f = Figlet(font='slant')
     print(f.renderText('Upbit Mecro'))
 
+    # Check Updater
+    updater = Updater()
+    updater.run()
+
     # Check Data.json
-    if os.path.isfile(file_name):
+    key_file = KeyFile()
+    if key_file.is_exist_file():
         # Select 
         questions = [
             inquirer.List('key',
@@ -34,12 +36,11 @@ if __name__ == '__main__':
         value = answers['key']
         if value == '초기화':
             pprint(emoji.emojize(':beer_mug: 키를 새로 입력하세요.'))
-            KeyFile().save(file_name=file_name)
+            key_file.save()
     else:
         pprint(emoji.emojize(':beer_mug: 저장된 키가 없습니다.'))
-        KeyFile().save(file_name=file_name)
-
-    json_data = KeyFile().read(file_name=file_name)
+        key_file.save()
+    json_data = key_file.read()
     access_key_data = json_data['AccessKey']
     secret_key_data = json_data['SecretKey']
 
@@ -95,69 +96,20 @@ if __name__ == '__main__':
             data_sort = DataSort.RATE
     
     try:
+        # MyCoinAccount
         my_account = MyCoinAccount(api=api, is_have_market=is_have_market)
         ticker_items = my_account.run(all_market_items=all_market_items, my_account_items=my_account_items)
         
-        market_data_helper = MarketDataHelper()
-
         if is_need_sort == True:
-            ticker_items = market_data_helper.getTickerItems(ticker_items=ticker_items, sort=DataSort.NAME)
-            execel_table = ExcelTable(sort=data_sort)
-            execel_table.print(all_market_items=all_market_items, ticker_items=ticker_items)
+            # ExcelTable
+            execel_table = ExcelTable(sort=data_sort, origin_ticker_items=ticker_items)
+            execel_table.print(all_market_items=all_market_items)
             execel_table.save_excel()
             
         if func_type_value == 'C':
-            ticker_items = market_data_helper.getTickerItems(ticker_items=ticker_items, sort=DataSort.RATE)
-            buy_coins = market_data_helper.getChoiceItems(ticker_items=ticker_items)
-
-            # Select 
-            questions_buy = [
-                inquirer.Checkbox('buy',
-                            message="구매 할 코인을 선택하세요. (마켓명 | 현재가 | 평균매수가 | 수익률 | 이름)",
-                            choices=buy_coins,
-                        ),
-            ]
-            answers_buys = inquirer.prompt(questions_buy)
-            buy_strings = answers_buys['buy']
-
-            if len(buy_strings) == 0:
-                sys.exit(0)
-
-            buy_value = input("코인당 매수가를 입력하세요. (ex., 100000) : ")
-            
-            if buy_value.rstrip() == '':
-                sys.exit(0)
-                
-            total_buy_value = len(buy_strings) * int(buy_value)
-            total_buy_value = '{0:,}'.format(total_buy_value)
-            print(f'총 필요한 금액은 {total_buy_value} 입니다.\n')
-
-            # Select 
-            questions_ing = [
-                inquirer.List('ing',
-                            message="진행 하시겠습니까?",
-                            choices=['(A) 진행', '(B) 중단'],
-                        ),
-            ]
-            answers_ing = inquirer.prompt(questions_ing)
-            ing_value = answers_ing['ing']
-
-            if "(A)" in ing_value:
-                upbit_order =  UpbitOrder(api=api)
-                buy_items = []
-                for buy_string in buy_strings:
-                    select_market = buy_string.split('|')[0].rstrip()
-                    data = {
-                        'market': select_market,
-                        'side': 'bid',
-                        'ord_type': 'price',
-                        'price': buy_value,
-                        # 'volume': Null,
-                    }
-                    buy_items.append(data)
-                upbit_order.buy_run(buy_items=buy_items)
-            elif "(B)" in ing_value:
-                sys.exit(0)
+            # UpbitOrder
+            upbit_order = UpbitOrder(api=api, origin_ticker_items=ticker_items)
+            upbit_order.process()
             
     except APIError as e:
         print(f'ERROR Reason :: {e}')

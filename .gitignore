@@ -1,2 +1,4 @@
+config/
+excel/
 data.json
 *.csv
