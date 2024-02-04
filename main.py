@@ -108,7 +108,7 @@ if __name__ == '__main__':
             
         if func_type_value == 'C':
             # UpbitOrder
-            upbit_order = UpbitOrder(api=api, origin_ticker_items=ticker_items)
+            upbit_order = UpbitOrder(api=api, origin_ticker_items=ticker_items, my_account_items=my_account_items)
             upbit_order.process()
             
     except APIError as e:

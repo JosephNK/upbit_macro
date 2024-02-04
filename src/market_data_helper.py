@@ -26,6 +26,18 @@ class MarketDataHelper:
         print(json_formatted_str)
         return json_object
     
+    def getMyCurrentPrice(self, my_account_items: list):
+        krw_market_items = list(filter(lambda x: (x['market'] == 'KRW-KRW') , my_account_items))
+        if len(krw_market_items) > 0:
+            current_price = krw_market_items[0]['balance']
+            f_current_price = round(float(current_price), 2)
+            return f_current_price
+        return 0
+    
+    def getAllowMyMarketItems(self, my_account_items: list):
+        allow_my_market_items = list(filter(lambda x: not (x['market'] == 'KRW-KRW' or x['avg_buy_price'] == '0') , my_account_items))
+        return allow_my_market_items
+
     def getTickerItems(self, ticker_items: list, sort: DataSort):
         items = []
 

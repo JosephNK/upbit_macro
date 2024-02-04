@@ -8,13 +8,15 @@ import emoji
 import asyncio
 
 class UpbitOrder:
+    my_account_items: list
     ticker_items: list
     buy_coins: list
 
     market_data_helper = MarketDataHelper()
 
-    def __init__(self, api: API, origin_ticker_items: list):
+    def __init__(self, api: API, origin_ticker_items: list, my_account_items: list):
         self.api = api
+        self.my_account_items = my_account_items
         self.ticker_items = self.market_data_helper.getTickerItems(ticker_items=origin_ticker_items, sort=DataSort.RATE)
         self.buy_coins = self.market_data_helper.getChoiceItems(ticker_items=self.ticker_items)
 
@@ -38,8 +40,16 @@ class UpbitOrder:
             sys.exit(0)
             
         total_buy_value = len(buy_strings) * int(buy_value)
-        total_buy_value = '{0:,}'.format(total_buy_value)
-        print(f'총 필요한 금액은 {total_buy_value} 입니다.\n')
+        total_buy_value_price = '{0:,}'.format(total_buy_value)
+        pprint(emoji.emojize(f':beer_mug: 총 필요한 금액은 {total_buy_value_price} 입니다.'))
+
+        currnet_price_value = self.market_data_helper.getMyCurrentPrice(my_account_items=self.my_account_items)
+        currnet_price_value_price = '{0:,}'.format(currnet_price_value)
+        pprint(emoji.emojize(f':beer_mug: 현재 가지고 있는 원화는 {currnet_price_value_price} 입니다.'))
+
+        if total_buy_value > currnet_price_value:
+            pprint(emoji.emojize(f':beer_mug: 구매 할 금액이 부족 합니다. 원화를 확인 해주세요.'))
+            sys.exit(0)
 
         # Select 
         questions_ing = [

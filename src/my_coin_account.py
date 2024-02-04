@@ -1,7 +1,11 @@
+from pprint import pprint
+from src.market_data_helper import MarketDataHelper
 from src.api import API, APIError
 import asyncio
 
 class MyCoinAccount:
+    market_data_helper = MarketDataHelper()
+    
     def __init__(self, api: API, is_have_market: bool):
         self.api = api
         self.is_have_market = is_have_market
@@ -10,7 +14,7 @@ class MyCoinAccount:
         return asyncio.run(self.custom_coroutine(all_market_items=all_market_items, my_account_items=my_account_items))
 
     async def custom_coroutine(self, all_market_items: list, my_account_items: list):
-        allow_my_market_items = list(filter(lambda x: not (x['market'] == 'KRW-KRW' or x['avg_buy_price'] == '0') , my_account_items))
+        allow_my_market_items = self.market_data_helper.getAllowMyMarketItems(my_account_items=my_account_items)
 
         if self.is_have_market == True:
             market_items = allow_my_market_items
