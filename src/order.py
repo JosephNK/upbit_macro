@@ -24,7 +24,7 @@ class UpbitOrder:
          # Select 
         questions_buy = [
             inquirer.Checkbox('buy',
-                        message="구매 할 코인을 선택하세요. (마켓명 | 현재가 | 매수평균가 | 평가금액 | 수익률 | 이름)",
+                        message="구매 할 코인을 선택하세요. (마켓명 | 현재가 | 매수평균가 | 매수금액 | 수익률 | 이름)",
                         choices=self.buy_coins,
                     ),
         ]

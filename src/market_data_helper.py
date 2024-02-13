@@ -57,6 +57,7 @@ class MarketDataHelper:
             f_locked = round(float(locked), 2)
             f_trade_price = round(float(trade_price), 2)
             f_evaluation_price = math.trunc(round(float(trade_price) * float(balance), 2)) # 평가 금액
+            f_buy_price = math.trunc(round(float(avg_buy_price) * float(balance), 2)) # 매수 금액
             f_high_price = float(high_price)
             f_low_price = float(low_price)
 
@@ -64,6 +65,7 @@ class MarketDataHelper:
             locked = '{0:,}'.format(f_locked)
             trade_price = '{0:,}'.format(float(f_trade_price))
             evaluation_price = '{0:,}'.format(float(f_evaluation_price))
+            buy_price = '{0:,}'.format(float(f_buy_price))
             high_price = '{0:,}'.format(float(f_high_price))
             low_price = '{0:,}'.format(float(f_low_price))
             highest_52_week_price = '{0:,}'.format(float(highest_52_week_price))
@@ -82,6 +84,7 @@ class MarketDataHelper:
                 'avg_buy_price': avg_buy_price,
                 'locked': locked,
                 'evaluation_price': evaluation_price,
+                'buy_price': buy_price,
                 'rate_of_return': rate_of_return,
                 'high_price': high_price,
                 'low_price': low_price,
@@ -101,14 +104,15 @@ class MarketDataHelper:
     def getChoiceItems(self, ticker_items: list):
         items = []
 
-        for ticker_item in ticker_items:
+        for ticker_item in ticker_items:            
             market = ticker_item.get('market').ljust(15, ' ')
             korean_name = ticker_item.get('korean_name')
             avg_buy_price = str(ticker_item.get('avg_buy_price', '0')).ljust(15, ' ') # 매수평균가
-            evaluation_price = str(ticker_item.get('evaluation_price', '0')).ljust(15, ' ') # 평가금액
+            # evaluation_price = str(ticker_item.get('evaluation_price', '0')).ljust(15, ' ') # 평가금액
+            buy_price = str(ticker_item.get('buy_price', '0')).ljust(15, ' ') # 매수금액
             trade_price = str(ticker_item.get('trade_price', '0')).ljust(15, ' ') # 현재가
             rate_of_return = str(ticker_item.get('rate_of_return', '0')).ljust(8, ' ') # 수익율
 
-            items.append(f'{market}| {trade_price}| {avg_buy_price}| {evaluation_price}| {rate_of_return}| {korean_name}')
+            items.append(f'{market}| {trade_price}| {avg_buy_price}| {buy_price}| {rate_of_return}| {korean_name}')
 
         return items
