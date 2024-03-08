@@ -18,7 +18,7 @@ class ExcelTable:
     
     def print(self, all_market_items: list):
         x = PrettyTable()
-        x.field_names = ["Market", "이름", "현재가", "매수평균가", "평가금액", "수익률(%)", "고가", "저가", "52주 신고가"]
+        x.field_names = ["Market", "이름", "현재가", "매수평균가", "평가금액", "평가손익", "수익률(%)", "고가", "저가", "52주 신고가"]
 
         for ticker_item in self.ticker_items:
             market = ticker_item.get('market')
@@ -29,13 +29,15 @@ class ExcelTable:
             high_price = ticker_item.get('high_price', '0') # 고가
             low_price = ticker_item.get('low_price', '0') # 저가
             rate_of_return = ticker_item.get('rate_of_return', '0') # 수익률
+            profit_loss_price = ticker_item.get('profit_loss_price', '0') # 평가손익
             highest_52_week_price = ticker_item.get('highest_52_week_price', '0') # 52주 신고가
-                
+
             item = [market, 
                     korean_name, 
                     trade_price, 
                     avg_buy_price, 
                     evaluation_price,
+                    profit_loss_price,
                     rate_of_return, 
                     high_price,
                     low_price,

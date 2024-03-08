@@ -59,7 +59,8 @@ if __name__ == '__main__':
                         message="다음 중 원하는 기능을 선택하세요",
                         choices=['(A) 현재 자산의 리스트를 보시겠습니까?', 
                                 '(B) 가지고 있는 않은 코인의 리스트를 보시겠습니까?',
-                                '(C) 매수 프로그램을 실행하시겠습니까?'],
+                                '(C) ----------------------------------',
+                                '(D) 매수 프로그램을 실행하시겠습니까?'],
                     ),
     ]
     answers_func = inquirer.prompt(questions_func)
@@ -73,6 +74,9 @@ if __name__ == '__main__':
         is_have_market = False
     elif "(C)" in func_value:
         func_type_value = 'C'
+        is_have_market = True
+    elif "(D)" in func_value:
+        func_type_value = 'D'
         is_have_market = True
 
     data_sort = DataSort.NAME
@@ -105,8 +109,11 @@ if __name__ == '__main__':
             execel_table = ExcelTable(sort=data_sort, origin_ticker_items=ticker_items)
             execel_table.print(all_market_items=all_market_items)
             execel_table.save_excel()
-            
+
         if func_type_value == 'C':
+            print('Not implemented')
+
+        if func_type_value == 'D':
             # UpbitOrder
             upbit_order = UpbitOrder(api=api, origin_ticker_items=ticker_items, my_account_items=my_account_items)
             upbit_order.process()

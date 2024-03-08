@@ -77,6 +77,14 @@ class MarketDataHelper:
             except:
                 rate_of_return = 0
 
+            # 평가손익
+            try:
+                f_profit_loss_price = round(f_evaluation_price - f_buy_price, 2)
+            except:
+                f_profit_loss_price = 0
+
+            profit_loss_price = '{0:,}'.format(float(f_profit_loss_price))
+
             item = {
                 'market': market,
                 'korean_name': korean_name,
@@ -88,6 +96,7 @@ class MarketDataHelper:
                 'rate_of_return': rate_of_return,
                 'high_price': high_price,
                 'low_price': low_price,
+                'profit_loss_price': profit_loss_price,
                 'highest_52_week_price': highest_52_week_price,
                 'lowest_52_week_price': lowest_52_week_price,
             }
@@ -112,6 +121,7 @@ class MarketDataHelper:
             buy_price = str(ticker_item.get('buy_price', '0')).ljust(15, ' ') # 매수금액
             trade_price = str(ticker_item.get('trade_price', '0')).ljust(15, ' ') # 현재가
             rate_of_return = str(ticker_item.get('rate_of_return', '0')).ljust(8, ' ') # 수익율
+            profit_loss_price = str(ticker_item.get('profit_loss_price', '0')).ljust(8, ' ') # 평가손익
 
             items.append(f'{market}| {trade_price}| {avg_buy_price}| {buy_price}| {rate_of_return}| {korean_name}')
 
