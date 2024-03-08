@@ -4,7 +4,7 @@ import os
 import json
 import emoji
 
-kVer = "1.1.0"
+kVer = "1.2.0"
 
 class Updater:
     save_dir = 'config'
